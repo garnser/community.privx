@@ -1,0 +1,13 @@
+namespace: community
+name: privx
+version: 0.1.0
+authors:
+  - Jonathan Petersson <jpetersson@garnser.se>
+readme: README.md
+tags:
+  - privx
+  - security
+  - api
+dependencies:
+  ansible.builtin: "*"
+license_file: LICENSE
