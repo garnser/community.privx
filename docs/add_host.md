@@ -27,7 +27,7 @@ This plugin allows you to add or update hosts in PrivX.
     host_data:
       common_name: "host.privx.ssh.com"
       addresses: ["host.privx.ssh.com", "192.168.0.10"]
-      access_group: "sysadmin"
+      access_group: "Default"
       services:
         - service: "SSH"
           address: "192.168.0.10"
