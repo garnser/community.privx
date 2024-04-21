@@ -35,9 +35,9 @@ The `config` dictionary must contain the following keys:
 ### Example 1: Retrieving roles
 
 ```yaml
-- name: Retrieve roles from PrivX
+- name: Retrieve role based on name from PrivX
   debug:
-    msg: "{{ lookup('community.privx.privx_lookup', 'get_roles', config=privx_config, filter='privx-user') }}"
+    msg: "{{ lookup('community.privx.privx_lookup', 'resolve_roles', config=privx_config, filter=['privx-user']) }}"
   vars:
     privx_config:
       hostname: 'privx.example.com'
@@ -51,9 +51,9 @@ The `config` dictionary must contain the following keys:
 
 ### Example 2: Using without filter
 ```yaml
-- name: Call a method without filter
+- name: Retreive all roles from PrivX
   debug:
-    msg: "{{ lookup('community.privx.privx_lookup', 'other_method', config=privx_config) }}"
+    msg: "{{ lookup('community.privx.privx_lookup', 'get_roles', config=privx_config) }}"
 ```
 
 ## Return Values
