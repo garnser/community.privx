@@ -3,7 +3,8 @@
 This collection includes modules and plugins to manage PrivX resources.
 
 ## Content
-- `add_host`: An action plugin to manage hosts in PrivX.
+- `add_host`: An module plugin to manage hosts in PrivX.
+- `privx_lookup`: A module to perform lookups in Privx
 
 ## Installation
 
