@@ -40,7 +40,24 @@ def define_argument_spec(module_specific_argument_spec):
 
     return _argument_spec
 
-
+def diff_dicts(dict1, dict2):
+    """
+    Compare two dictionaries and return their differences.
+    """
+    diff = {}
+    # Check keys present in dict1 but not in dict2
+    for key in dict1.keys():
+        if key not in dict2:
+            diff[key] = {'old': dict1[key], 'new': None}
+    # Check keys present in dict2 but not in dict1
+    for key in dict2.keys():
+        if key not in dict1:
+            diff[key] = {'old': None, 'new': dict2[key]}
+    # Check keys present in both dicts
+    for key in dict1.keys() & dict2.keys():
+        if dict1[key] != dict2[key]:
+            diff[key] = {'old': dict1[key], 'new': dict2[key]}
+    return diff
 
 class PrivXAnsibleModule(object):
     def __init__(self, module_params):

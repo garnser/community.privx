@@ -1,6 +1,6 @@
-namespace: community
+namespace: garnser
 name: privx
-version: 0.1.0
+version: 0.1.2
 authors:
   - Jonathan Petersson <jpetersson@garnser.se>
 readme: README.md
@@ -11,3 +11,4 @@ tags:
 dependencies:
   ansible.builtin: "*"
 license_file: LICENSE
+repository: https://github.com/garnser/community.privx

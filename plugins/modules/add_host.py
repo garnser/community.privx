@@ -3,7 +3,10 @@ import sys
 import json
 from http import HTTPStatus
 
-from ansible_collections.community.privx.plugins.module_utils.privx_utils import PrivXAnsibleModule, define_argument_spec
+from ansible_collections.community.privx.plugins.module_utils.privx_utils import PrivXAnsibleModule, define_argument_spec, diff_dicts
+from ansible_collections.community.privx.plugins.module_utils.host_store import PrivXHostStore
+from ansible_collections.community.privx.plugins.module_utils.role_store import PrivXRoleStore
+from ansible_collections.community.privx.plugins.module_utils.authorizer import PrivXAuthorizer
 from ansible.module_utils.basic import AnsibleModule
 
 try:
@@ -15,36 +18,6 @@ except ImportError:
     load_privx_api_lib_path()
     import privx_api
 
-def get_valid_roles(api):
-    """Fetch all roles and return a mapping of names to IDs and a set of valid IDs."""
-    response = api.get_roles()
-    try:
-        if response.ok:
-            roles_mapping = {role['name']: role['id'] for role in response.data['items']}
-            valid_ids = {role['id'] for role in response.data['items']}
-            return roles_mapping, valid_ids
-        else:
-            _display.warning("Failed to fetch roles from PrivX API.")
-            return {}, set()
-    except Exception as e:
-        _display.error("Error fetching roles: %s" % str(e))
-        return {}
-
-
-def get_valid_access_groups(api):
-    """Fetch all access groups and return a mapping of names to IDs and a set of valid IDs."""
-    response = api.get_access_groups()
-    try:
-        if response.ok:
-            access_groups_mapping = {group['name']: group['id'] for group in response.data['items']}
-            valid_ids = {group['id'] for group in response.data['items']}
-            return access_groups_mapping, valid_ids
-        else:
-            _display.warning("Failed to fetch access groups from PrivX API.")
-            return {}, set()
-    except Exception as e:
-        _display.error("Error fetching access groups: %s" % str(e))
-        return {}
 
 def main():
     host_data_spec = {
@@ -136,6 +109,7 @@ def update_host(api, module, host_id, existing_host_data, new_host_data, result)
         update_response = api.update_host(host_id, updated_host_data)
         if update_response._ok:
             result['msg'] = "Host updated successfully."
+            result['diff'] = diff_dicts(updated_host_data, existing_host_data)
             result['changed'] = True
             module.exit_json(**result)
         else:
@@ -145,43 +119,32 @@ def update_host(api, module, host_id, existing_host_data, new_host_data, result)
 
 def add_host(api, module, host_data, result):
     # Fetch role mappings only if needed
-    roles_mapping, valid_role_ids = get_valid_roles(api)
-    access_groups_mapping, valid_access_group_ids = get_valid_access_groups(api)
+
+    hoststore = PrivXHostStore(api)
 
     # Process roles in host_data
     new_roles = []
     for principal in host_data.get('principals', []):
         if 'roles' in principal:
             for role in principal['roles']:
-                role_id = None
-                if 'name' in role and role['name'] in roles_mapping:
-                    role_id = roles_mapping[role['name']]
-                elif 'id' in role and role['id'] in valid_role_ids:
-                    role_id = role['id']
-
-                if role_id:
+                try:
+                    role_id = PrivXRoleStore.get_role_id_by_input(api, role)
                     new_roles.append({'id': role_id})
-                else:
+                except Exception as e:
                     result['failed'] = True
-                    result['msg'] = f"Role identifier '{role.get('name', role.get('id', 'Unknown'))}' not found or invalid."
+                    result['msg'] = f"{e}"
                     return
+
             principal['roles'] = new_roles
 
     # Process access group
     if 'access_group' in host_data:
-        ag_id = None
-        ag_identifier = host_data['access_group']
-        if ag_identifier in access_groups_mapping:
-            ag_id = access_groups_mapping[ag_identifier]
-        elif ag_identifier in valid_access_group_ids:
-            ag_id = ag_identifier
-
-        if ag_id:
-            host_data['access_group_id'] = ag_id
+        try:
+            host_data['access_group_id'] = PrivXAuthorizer.get_access_group_by_input(api, host_data['access_group'])
             del host_data['access_group']
-        else:
+        except Exception as e:
             result['failed'] = True
-            result['msg'] = f"Access group '{ag_identifier}' not found or invalid."
+            result['msg'] = f"{e}"
             return
 
     # Search for the host by common name
