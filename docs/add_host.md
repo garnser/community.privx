@@ -8,15 +8,15 @@ This plugin allows you to add or update hosts in PrivX.
 
 ## Parameters
 
-- `config`: Connection parameters to the PrivX instance.
+- `hostname`: The hostname of the PrivX instance.
 - `host_data`: A dictionary containing data about the host.
 
 ## Examples
 
 ```yaml
 - name: Add host to PrivX
-  community.privx.add_host:
-    config:
+  garnser.privx.add_host:
+    privx_config:
       hostname: 'privx.ssh.com'
       hostport: 443
       ca_cert: 'privx.crt'
@@ -27,7 +27,7 @@ This plugin allows you to add or update hosts in PrivX.
     host_data:
       common_name: "host.privx.ssh.com"
       addresses: ["host.privx.ssh.com", "192.168.0.10"]
-      access_group: "Default"
+      access_group: "sysadmin"
       services:
         - service: "SSH"
           address: "192.168.0.10"

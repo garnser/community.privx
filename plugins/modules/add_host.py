@@ -3,10 +3,10 @@ import sys
 import json
 from http import HTTPStatus
 
-from ansible_collections.community.privx.plugins.module_utils.privx_utils import PrivXAnsibleModule, define_argument_spec, diff_dicts
-from ansible_collections.community.privx.plugins.module_utils.host_store import PrivXHostStore
-from ansible_collections.community.privx.plugins.module_utils.role_store import PrivXRoleStore
-from ansible_collections.community.privx.plugins.module_utils.authorizer import PrivXAuthorizer
+from ansible_collections.garnser.privx.plugins.module_utils.privx_utils import PrivXAnsibleModule, define_argument_spec, diff_dicts
+from ansible_collections.garnser.privx.plugins.module_utils.host_store import PrivXHostStore
+from ansible_collections.garnser.privx.plugins.module_utils.role_store import PrivXRoleStore
+from ansible_collections.garnser.privx.plugins.module_utils.authorizer import PrivXAuthorizer
 from ansible.module_utils.basic import AnsibleModule
 
 try:
@@ -27,6 +27,7 @@ def main():
             'options': {
                 'common_name': {'type': 'str', 'required': True},
                 'addresses': {'type': 'list', 'elements': 'str', 'required': False},
+                'tofu': {'type': 'bool', 'required': False},
                 'access_group': {'type': 'str', 'required': False},  # Explicitly mentioned
                 'external_id': {'type': 'str', 'required': False},
                 'ssh_host_public_keys': {'type': 'list', 'required': False},
@@ -46,6 +47,7 @@ def main():
                     'options': {
                         'principal': {'type': 'str', 'required': True},
                         'passphrase': {'type': 'str', 'required': False},
+                        'use_user_account': {'type': 'bool', 'required': True},
                         'source': {'type': 'str', 'required': False},
                         'roles': {
                             'type': 'list',
@@ -99,10 +101,43 @@ def update_host(api, module, host_id, existing_host_data, new_host_data, result)
 
     # Update fields from new_host_data, potentially excluding external_id
     for key, value in new_host_data.items():
-        if key == 'external_id':
-            # Skip overriding external_id unless specifically allowed
-            continue
-        updated_host_data[key] = value
+        if key == 'principals':
+            # Merge the principals from new_host_data with existing_host_data
+            existing_principals = updated_host_data.get('principals', [])
+            new_principals = value
+            # Create a set of unique principal identifiers
+            unique_principals = {(p['principal'], p['passphrase'], p['use_user_account'], p['source']) for p in existing_principals}
+            # Add new principals that don't already exist or replace if roles differ
+            for new_principal in new_principals:
+                new_principal_id = (new_principal['principal'], new_principal['passphrase'], new_principal['use_user_account'], new_principal['source'])
+                existing_principal_index = next((i for i, p in enumerate(existing_principals) if (p['principal'], p['passphrase'], p['use_user_account'], p['source']) == new_principal_id), None)
+                if existing_principal_index is not None:
+                    existing_principal = existing_principals[existing_principal_index]
+                    # Check if roles are different
+                    if existing_principal.get('roles', []) != new_principal.get('roles', []):
+                        existing_principals[existing_principal_index] = new_principal
+                        unique_principals.add(new_principal_id)
+                else:
+                    existing_principals.append(new_principal)
+                    unique_principals.add(new_principal_id)
+            updated_host_data['principals'] = existing_principals
+#            # Merge the principals from new_host_data with existing_host_data
+#            existing_principals = updated_host_data.get('principals', [])
+#            new_principals = value
+#            # Create a set of unique principal identifiers
+#            unique_principals = {(p['principal'], p['passphrase'], p['use_user_account'], p['source']) for p in existing_principals}
+#            # Add new principals that don't already exist
+#            for principal in new_principals:
+#                principal_id = (principal['principal'], principal['passphrase'], principal['use_user_account'], principal['source'])
+#                if principal_id not in unique_principals:
+#                    existing_principals.append(principal)
+#                    unique_principals.add(principal_id)
+#            updated_host_data['principals'] = existing_principals
+        elif key == 'ssh_host_public_keys':
+          if len(updated_host_data.get('ssh_host_public_keys', '')) == 0:
+              updated_host_data['ssh_host_public_keys'] = value
+        else:
+            updated_host_data[key] = value
 
     # Check if any relevant data has changed before making an update call
     if updated_host_data != existing_host_data:
@@ -123,8 +158,10 @@ def add_host(api, module, host_data, result):
     hoststore = PrivXHostStore(api)
 
     # Process roles in host_data
-    new_roles = []
+    result['msg'] = f"Initial: {host_data.get('principals')}"
+
     for principal in host_data.get('principals', []):
+        new_roles = []
         if 'roles' in principal:
             for role in principal['roles']:
                 try:

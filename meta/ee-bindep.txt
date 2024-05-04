@@ -1,2 +1,0 @@
-cryptsetup [platform:dpkg]
-cryptsetup [platform:rpm]

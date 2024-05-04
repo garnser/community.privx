@@ -3,15 +3,15 @@
 This collection includes modules and plugins to manage PrivX resources.
 
 ## Content
-- `add_host`: An module plugin to manage hosts in PrivX.
-- `privx_lookup`: A module to perform lookups in Privx
+- `add_host`: An action plugin to manage hosts in PrivX.
+- `privx_api`: A Python library module for interacting with the PrivX API.
 
 ## Installation
 
 Install this collection locally using Ansible Galaxy:
 
 ```bash
-ansible-galaxy collection install 'git+https://github.com/garnser/community.privx.git,main'
+ansible-galaxy collection install garnser.privx
 ```
 
 ## Usage

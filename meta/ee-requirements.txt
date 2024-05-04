@@ -2,4 +2,4 @@
 # GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-privx-api
+git+https://github.com/SSHcom/privx-sdk-for-python.git@f8d30a7af9cc8309ad810f79e532ae39a5fe9d70

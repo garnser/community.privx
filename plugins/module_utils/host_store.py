@@ -1,5 +1,5 @@
-from ansible_collections.community.privx.plugins.module_utils.role_store import PrivXRoleStore
-from ansible_collections.community.privx.plugins.module_utils.authorizer import PrivXAuthorizer
+from ansible_collections.garnser.privx.plugins.module_utils.role_store import PrivXRoleStore
+from ansible_collections.garnser.privx.plugins.module_utils.authorizer import PrivXAuthorizer
 
 class PrivXHostStore(object):
 
